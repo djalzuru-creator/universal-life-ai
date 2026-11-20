@@ -25,13 +25,12 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # La URL y la clave publicable son públicas por diseño (la seguridad está en RLS).
-      # Se guardan como variables del repositorio: Settings → Secrets and variables → Actions → Variables.
+      # config/prod.json solo lleva la URL y la clave publicable: son públicas por
+      # diseño y la seguridad está en las políticas RLS. Nunca poner aquí la secret key.
       - run: >
           flutter build web --release
           --base-href "/${{ github.event.repository.name }}/"
-          --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
-          --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          --dart-define-from-file=config/prod.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
