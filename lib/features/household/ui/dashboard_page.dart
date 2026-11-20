@@ -11,6 +11,8 @@ const availableModules = {
   AppModule.pantry,
   AppModule.shopping,
   AppModule.wardrobe,
+  AppModule.budget,
+  AppModule.recipes,
 };
 
 const moduleIcons = {
