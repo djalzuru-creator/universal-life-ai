@@ -23,7 +23,7 @@ set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
 select public.create_household('Casa Alzuru', 'Dj') as hid \gset
 select pg_temp.check((select count(*) from members where household_id = :'hid') = 1, 'propietario es miembro');
-select pg_temp.check((select count(*) from member_permissions) = 5, 'propietario tiene 5 módulos');
+select pg_temp.check((select count(*) from member_permissions) = (select count(*) from unnest(enum_range(null::app_module))), 'propietario tiene todos los módulos');
 select pg_temp.check((select bool_and(can_approve) from member_permissions), 'propietario puede aprobar todo');
 
 -- 2. Invita a un adolescente
@@ -41,7 +41,7 @@ select pg_temp.check((select count(*) from invitations) = 0, 'desconocido no ve 
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
 select public.accept_invitation(lower(:'code'));
 select pg_temp.check((select count(*) from members) = 2, 'adolescente ve a su familia');
-select pg_temp.check((select count(*) from member_permissions) = 5, 'adolescente solo ve sus permisos');
+select pg_temp.check((select count(distinct member_id) from member_permissions) = 1, 'adolescente solo ve sus permisos');
 select pg_temp.check(not public.has_permission(:'hid', 'budget', 'edit'), 'adolescente no edita presupuesto');
 select pg_temp.check(public.has_permission(:'hid', 'shopping', 'create'), 'adolescente añade a la compra');
 select pg_temp.check((select count(*) from invitations) = 0, 'adolescente no ve invitaciones');

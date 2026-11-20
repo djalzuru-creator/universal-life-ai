@@ -46,6 +46,7 @@ void main() {
       'shopping',
       'budget',
       'recipes',
+      'wardrobe',
     ]);
     expect(PermissionAction.values.map((a) => a.column), [
       'can_view',

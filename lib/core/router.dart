@@ -13,6 +13,7 @@ import '../features/household/ui/home_page.dart';
 import '../features/household/ui/member_permissions_page.dart';
 import '../features/household/ui/start_page.dart';
 import '../features/pantry/ui/pantry_page.dart';
+import '../features/wardrobe/ui/wardrobe_page.dart';
 
 /// Avisa al router cuando cambia la sesión para recalcular redirecciones.
 class _AuthListenable extends ChangeNotifier {
@@ -54,6 +55,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'pantry',
             builder: (_, s) =>
                 PantryPage(householdId: s.pathParameters['hid']!),
+          ),
+          GoRoute(
+            path: 'wardrobe',
+            builder: (_, s) =>
+                WardrobePage(householdId: s.pathParameters['hid']!),
           ),
           GoRoute(
             path: 'admin',
