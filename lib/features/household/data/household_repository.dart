@@ -42,7 +42,13 @@ class HouseholdRepository {
         .from('member_permissions')
         .select()
         .eq('member_id', memberId);
-    return rows.map(ModulePermission.fromJson).toList();
+    // Una versión antigua de la app (guardada en el navegador) puede no conocer
+    // módulos nuevos: se ignoran en lugar de romper el panel.
+    final known = {for (final m in AppModule.values) m.name};
+    return rows
+        .where((r) => known.contains(r['module']))
+        .map(ModulePermission.fromJson)
+        .toList();
   }
 
   Future<String> createHousehold({
