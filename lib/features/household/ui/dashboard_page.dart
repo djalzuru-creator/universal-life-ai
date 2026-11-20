@@ -105,10 +105,12 @@ class DashboardPage extends ConsumerWidget {
                         Card(
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            onTap: () => showSnack(
-                              context,
-                              '${m.label}: llega en el siguiente paso.',
-                            ),
+                            onTap: () => m == AppModule.pantry
+                                ? context.go('/h/$householdId/pantry')
+                                : showSnack(
+                                    context,
+                                    '${m.label}: llega en el siguiente paso.',
+                                  ),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -128,7 +130,9 @@ class DashboardPage extends ConsumerWidget {
                                             .titleMedium,
                                       ),
                                       Text(
-                                        'Próximamente',
+                                        m == AppModule.pantry
+                                            ? 'Abrir'
+                                            : 'Próximamente',
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall,
