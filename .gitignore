@@ -50,3 +50,5 @@ app.*.map.json
 # Claves locales de Supabase (nunca subir)
 config/*.json
 !config/*.example.json
+# prod.json solo lleva la URL y la clave publicable, que son públicas por diseño
+!config/prod.json
