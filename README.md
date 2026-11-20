@@ -20,6 +20,14 @@ Uso familiar y gratuito. Todo funciona con planes gratuitos (Flutter, Supabase, 
 - Botón para "gastar uno" y sincronización en tiempo real entre toda la familia.
 - Cada perfil solo ve, añade, edita o borra lo que su permiso de "Despensa" le deja.
 
+## Armario
+
+- Un armario por persona, con fotos desde la cámara o la galería (almacenamiento privado de Supabase).
+- Cada prenda guarda tipo, color, estaciones, cuánto abriga y estilo. Se puede compartir con la familia.
+- **Hoy**: propuesta de ropa según el tiempo de la ciudad del hogar ([Open-Meteo](https://open-meteo.com), gratis y sin clave), con avisos de lluvia y de cambio de temperatura.
+- **Conjuntos**: crear, guardar y marcar favoritos.
+- Cada uno ve y edita solo su armario; el administrador ve el de toda la familia. Las prendas compartidas las ven todos.
+
 Lista de la compra, Presupuesto y Recetas aparecen en el panel como "Próximamente".
 
 ## Puesta en marcha
@@ -84,7 +92,6 @@ Las pruebas de base de datos comprueban, entre otras cosas, que un desconocido n
 
 ## Próximos pasos
 
-1. Armario digital y outfit del día (ropa).
-2. Lista de la compra compartida en tiempo real.
-3. Presupuesto del hogar.
-4. Recetas con IA gratuita usando lo que hay en la despensa.
+1. Lista de la compra compartida en tiempo real.
+2. Presupuesto del hogar.
+3. Recetas con IA gratuita usando lo que hay en la despensa.

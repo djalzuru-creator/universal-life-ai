@@ -12,6 +12,7 @@ const moduleIcons = {
   AppModule.shopping: Icons.shopping_cart_outlined,
   AppModule.budget: Icons.account_balance_wallet_outlined,
   AppModule.recipes: Icons.restaurant_menu_outlined,
+  AppModule.wardrobe: Icons.checkroom,
 };
 
 /// Panel principal del hogar. Muestra solo los módulos que el miembro puede ver.
@@ -105,8 +106,9 @@ class DashboardPage extends ConsumerWidget {
                         Card(
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            onTap: () => m == AppModule.pantry
-                                ? context.go('/h/$householdId/pantry')
+                            onTap: () =>
+                                m == AppModule.pantry || m == AppModule.wardrobe
+                                ? context.go('/h/$householdId/${m.name}')
                                 : showSnack(
                                     context,
                                     '${m.label}: llega en el siguiente paso.',
@@ -130,7 +132,8 @@ class DashboardPage extends ConsumerWidget {
                                             .titleMedium,
                                       ),
                                       Text(
-                                        m == AppModule.pantry
+                                        m == AppModule.pantry ||
+                                                m == AppModule.wardrobe
                                             ? 'Abrir'
                                             : 'Próximamente',
                                         style: Theme.of(context)

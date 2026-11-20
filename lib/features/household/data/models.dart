@@ -19,7 +19,8 @@ enum AppModule {
   pantry('Despensa'),
   shopping('Lista de la compra'),
   budget('Presupuesto'),
-  recipes('Recetas');
+  recipes('Recetas'),
+  wardrobe('Armario');
 
   const AppModule(this.label);
   final String label;
@@ -43,16 +44,25 @@ class Household {
     required this.id,
     required this.name,
     required this.ownerId,
+    this.cityName,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
   final String name;
   final String ownerId;
+  final String? cityName;
+  final double? latitude;
+  final double? longitude;
 
   factory Household.fromJson(Map<String, dynamic> j) => Household(
     id: j['id'] as String,
     name: j['name'] as String,
     ownerId: j['owner_id'] as String,
+    cityName: j['city_name'] as String?,
+    latitude: (j['latitude'] as num?)?.toDouble(),
+    longitude: (j['longitude'] as num?)?.toDouble(),
   );
 }
 
