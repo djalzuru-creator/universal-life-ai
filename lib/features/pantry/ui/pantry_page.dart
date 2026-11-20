@@ -5,6 +5,7 @@ import '../../household/data/models.dart';
 import '../../household/data/providers.dart';
 import '../../household/ui/common.dart';
 import '../data/pantry_models.dart';
+import '../../shopping/data/shopping_repository.dart';
 import '../data/pantry_repository.dart';
 import 'pantry_item_form.dart';
 import 'scanner_page.dart';
@@ -236,6 +237,28 @@ class _PantryPageState extends ConsumerState<PantryPage> {
                                           item.id!,
                                           item.quantity - 1,
                                         );
+                                    if (item.quantity - 1 <= 0 &&
+                                        context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Se ha acabado: ${item.name}',
+                                          ),
+                                          action: SnackBarAction(
+                                            label: 'Añadir a la compra',
+                                            onPressed: () => ref
+                                                .read(
+                                                  shoppingRepositoryProvider,
+                                                )
+                                                .add(
+                                                  ShoppingItem.fromPantry(item),
+                                                ),
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   } catch (e) {
                                     if (context.mounted) {
                                       showSnack(context, '$e');

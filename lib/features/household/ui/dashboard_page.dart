@@ -6,6 +6,13 @@ import '../data/models.dart';
 import '../data/providers.dart';
 import 'common.dart';
 
+/// Módulos que ya tienen pantalla; el resto aparece como "Próximamente".
+const availableModules = {
+  AppModule.pantry,
+  AppModule.shopping,
+  AppModule.wardrobe,
+};
+
 const moduleIcons = {
   AppModule.dashboard: Icons.dashboard_outlined,
   AppModule.pantry: Icons.kitchen_outlined,
@@ -106,8 +113,7 @@ class DashboardPage extends ConsumerWidget {
                         Card(
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            onTap: () =>
-                                m == AppModule.pantry || m == AppModule.wardrobe
+                            onTap: () => availableModules.contains(m)
                                 ? context.go('/h/$householdId/${m.name}')
                                 : showSnack(
                                     context,
@@ -132,8 +138,7 @@ class DashboardPage extends ConsumerWidget {
                                             .titleMedium,
                                       ),
                                       Text(
-                                        m == AppModule.pantry ||
-                                                m == AppModule.wardrobe
+                                        availableModules.contains(m)
                                             ? 'Abrir'
                                             : 'Próximamente',
                                         style: Theme.of(context)
