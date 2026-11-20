@@ -34,7 +34,7 @@ Uso familiar y gratuito. Todo funciona con planes gratuitos (Flutter, Supabase, 
 - Lo que se acaba en la despensa se propone para añadir con un toque.
 - Al marcar lo comprado, un botón lo guarda en la despensa (con el precio, si se apunta).
 
-Presupuesto y Recetas aparecen en el panel como "Próximamente".
+Todos los módulos del MVP tienen pantalla: despensa, compra, armario, presupuesto y recetas.
 
 ## Puesta en marcha
 
@@ -98,5 +98,4 @@ Las pruebas de base de datos comprueban, entre otras cosas, que un desconocido n
 
 ## Próximos pasos
 
-1. Presupuesto del hogar.
-2. Recetas con IA gratuita usando lo que hay en la despensa.
+1. Recetas con IA gratuita (Gemini) además del catálogo.
