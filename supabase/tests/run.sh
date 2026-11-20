@@ -8,4 +8,4 @@ psql "$DB_URL" -q -c "drop database if exists ula_test" -c "create database ula_
 TEST_URL="${DB_URL%/*}/ula_test"
 psql "$TEST_URL" -q -v ON_ERROR_STOP=1 -f tests/stub_auth.sql
 for f in migrations/*.sql; do psql "$TEST_URL" -q -v ON_ERROR_STOP=1 -f "$f"; done
-for t in tests/permisos_test.sql tests/despensa_test.sql tests/armario_test.sql tests/compra_test.sql; do psql "$TEST_URL" -q -v ON_ERROR_STOP=1 -f "$t"; done
+for t in tests/permisos_test.sql tests/despensa_test.sql tests/armario_test.sql tests/compra_test.sql tests/presupuesto_test.sql; do psql "$TEST_URL" -q -v ON_ERROR_STOP=1 -f "$t"; done

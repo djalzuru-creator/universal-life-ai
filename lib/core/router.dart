@@ -7,12 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/auth/login_page.dart';
 import '../features/household/data/providers.dart';
+import '../features/budget/budget.dart';
 import '../features/household/ui/admin_page.dart';
 import '../features/household/ui/dashboard_page.dart';
 import '../features/household/ui/home_page.dart';
 import '../features/household/ui/member_permissions_page.dart';
 import '../features/household/ui/start_page.dart';
 import '../features/pantry/ui/pantry_page.dart';
+import '../features/recipes/recipes.dart';
 import '../features/shopping/ui/shopping_page.dart';
 import '../features/wardrobe/ui/wardrobe_page.dart';
 
@@ -66,6 +68,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'wardrobe',
             builder: (_, s) =>
                 WardrobePage(householdId: s.pathParameters['hid']!),
+          ),
+          GoRoute(
+            path: 'budget',
+            builder: (_, s) =>
+                BudgetPage(householdId: s.pathParameters['hid']!),
+          ),
+          GoRoute(
+            path: 'recipes',
+            builder: (_, s) =>
+                RecipesPage(householdId: s.pathParameters['hid']!),
           ),
           GoRoute(
             path: 'admin',
