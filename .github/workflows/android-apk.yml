@@ -1,0 +1,52 @@
+name: App Android (APK)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/android-apk.yml
+      - android/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Firmado con la clave de depuración: sirve para instalar directamente (sin tienda).
+      - run: flutter build apk --release --dart-define-from-file=config/prod.json
+      - run: mv build/app/outputs/flutter-apk/app-release.apk universal-life-ai.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: universal-life-ai-apk
+          path: universal-life-ai.apk
+      # En main, publica el APK en la página de descargas con un enlace fijo.
+      - if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android
+          name: App Android
+          make_latest: true
+          body: |
+            Última versión de Universal Life AI para Android.
+            Descarga `universal-life-ai.apk` desde el móvil y ábrelo para instalar.
+            Si al actualizar dice que hay un conflicto, desinstala la versión anterior y vuelve a instalar: tus datos están en la nube y no se pierden.
+          files: universal-life-ai.apk
