@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necesario para hablar con Supabase, Open Food Facts y Open-Meteo en la versión publicada. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="Universal Life AI"
         android:name="${applicationName}"
