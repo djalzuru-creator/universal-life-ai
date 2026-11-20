@@ -28,7 +28,13 @@ Uso familiar y gratuito. Todo funciona con planes gratuitos (Flutter, Supabase, 
 - **Conjuntos**: crear, guardar y marcar favoritos.
 - Cada uno ve y edita solo su armario; el administrador ve el de toda la familia. Las prendas compartidas las ven todos.
 
-Lista de la compra, Presupuesto y Recetas aparecen en el panel como "Próximamente".
+## Lista de la compra
+
+- Lista compartida en tiempo real: lo que añade uno lo ven todos al momento.
+- Lo que se acaba en la despensa se propone para añadir con un toque.
+- Al marcar lo comprado, un botón lo guarda en la despensa (con el precio, si se apunta).
+
+Presupuesto y Recetas aparecen en el panel como "Próximamente".
 
 ## Puesta en marcha
 
@@ -92,6 +98,5 @@ Las pruebas de base de datos comprueban, entre otras cosas, que un desconocido n
 
 ## Próximos pasos
 
-1. Lista de la compra compartida en tiempo real.
-2. Presupuesto del hogar.
-3. Recetas con IA gratuita usando lo que hay en la despensa.
+1. Presupuesto del hogar.
+2. Recetas con IA gratuita usando lo que hay en la despensa.
