@@ -12,14 +12,22 @@ Uso familiar y gratuito. Todo funciona con planes gratuitos (Flutter, Supabase, 
 - Panel del administrador: miembros, cambiar perfil, suspender, eliminar, invitaciones y registro de cambios.
 - Seguridad en la base de datos con Row Level Security: aunque alguien modifique la app, solo ve lo que su perfil permite.
 
-Los módulos Despensa, Lista de la compra, Presupuesto y Recetas aparecen en el panel como "Próximamente".
+## Despensa
+
+- Productos por ubicación (nevera, congelador, despensa, otros), con cantidad, caducidad y precio.
+- Añadir escaneando el código de barras con la cámara: el nombre, la marca y la foto se rellenan solos desde [Open Food Facts](https://world.openfoodfacts.org) (gratis).
+- Lo que caduca en 3 días o menos aparece primero y en color, con un aviso arriba.
+- Botón para "gastar uno" y sincronización en tiempo real entre toda la familia.
+- Cada perfil solo ve, añade, edita o borra lo que su permiso de "Despensa" le deja.
+
+Lista de la compra, Presupuesto y Recetas aparecen en el panel como "Próximamente".
 
 ## Puesta en marcha
 
 ### 1. Crear el proyecto de Supabase (gratis)
 
 1. Entra en [supabase.com](https://supabase.com) y crea un proyecto nuevo (plan Free).
-2. En **SQL Editor**, pega y ejecuta el archivo `supabase/migrations/20261120000000_hogar_perfiles_permisos.sql`.
+2. En **SQL Editor**, pega y ejecuta, en orden, cada archivo de `supabase/migrations/`.
 3. En **Project Settings → API Keys**, copia la URL del proyecto y la **publishable key**. Nunca uses la `secret` / `service_role` key en la app.
 
 ### 2. Configurar la app
@@ -76,7 +84,7 @@ Las pruebas de base de datos comprueban, entre otras cosas, que un desconocido n
 
 ## Próximos pasos
 
-1. Despensa con escáner de códigos de barras (Open Food Facts).
+1. Armario digital y outfit del día (ropa).
 2. Lista de la compra compartida en tiempo real.
 3. Presupuesto del hogar.
 4. Recetas con IA gratuita usando lo que hay en la despensa.
