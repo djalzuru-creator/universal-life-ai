@@ -37,9 +37,25 @@ try {
   $email = $cred.UserName
   $pass = $cred.GetNetworkCredential().Password
 
-  $login = Invoke-RestMethod -Method Post -Uri "$Url/auth/v1/token?grant_type=password" `
-    -Headers @{ apikey = $Key } -ContentType 'application/json' `
-    -Body (@{ email = $email; password = $pass } | ConvertTo-Json)
+  # El cuerpo se manda en UTF-8 (PowerShell 5 usa otra codificacion y fallan tildes o la n).
+  $body = [Text.Encoding]::UTF8.GetBytes((@{ email = $email.Trim(); password = $pass } | ConvertTo-Json -Compress))
+  try {
+    $login = Invoke-RestMethod -Method Post -Uri "$Url/auth/v1/token?grant_type=password" `
+      -Headers @{ apikey = $Key } -ContentType 'application/json; charset=utf-8' -Body $body
+  } catch {
+    $detalle = ''
+    try {
+      $r = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+      $detalle = $r.ReadToEnd()
+    } catch {}
+    if ($detalle -match 'invalid_credentials|Invalid login') {
+      throw 'Correo o contrasena incorrectos. Vuelve a abrir instalar.bat y escribelos otra vez.'
+    }
+    if ($detalle -match 'email_not_confirmed') {
+      throw 'Ese correo aun no esta confirmado. Confirmalo desde el email de bienvenida.'
+    }
+    throw "No se pudo entrar con tu cuenta. $detalle"
+  }
   $H = @{ apikey = $Key; Authorization = "Bearer $($login.access_token)" }
 
   function Get-Rows([string]$table, [string]$filter) {
