@@ -81,6 +81,7 @@ class ShoppingItem {
     unit: unit,
     location: location,
     price: price,
+    summary: note,
   );
 }
 
@@ -144,6 +145,9 @@ class ShoppingRepository {
     ]..sort((a, b) => b.at.compareTo(a.at));
     return hits.isEmpty ? null : hits.first.price;
   }
+
+  Future<void> setQuantity(String id, double quantity) =>
+      _db.from('shopping_items').update({'quantity': quantity}).eq('id', id);
 
   Future<void> setChecked(String id, bool checked) =>
       _db.from('shopping_items').update({'is_checked': checked}).eq('id', id);

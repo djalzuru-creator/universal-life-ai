@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../household/data/household_repository.dart';
 import '../../household/data/models.dart';
 import '../../household/data/providers.dart';
 import '../../household/ui/common.dart';
@@ -8,6 +9,7 @@ import '../data/pantry_models.dart';
 import '../../shopping/data/shopping_repository.dart';
 import '../data/pantry_repository.dart';
 import 'pantry_item_form.dart';
+import '../data/scan_lookup.dart';
 import 'scanner_page.dart';
 
 /// Permisos del usuario actual sobre la despensa de un hogar.
@@ -53,10 +55,41 @@ class _PantryPageState extends ConsumerState<PantryPage> {
         .push<String>(MaterialPageRoute(builder: (_) => const ScannerPage()));
     if (code == null || !mounted) return;
     showSnack(context, 'Buscando el producto…');
-    final info = await ref.read(openFoodFactsProvider).lookup(code);
+    final scanned = await ref.read(scanLookupProvider)(code);
+    final info = scanned.info;
+    if (!mounted) return;
+    // Escanear otra vez algo que ya está en la despensa suma uno más.
+    final existing =
+        (ref.read(pantryItemsProvider(widget.householdId)).value ??
+                const <PantryItem>[])
+            .where((p) => p.barcode == code)
+            .firstOrNull;
+    final step = existing == null
+        ? null
+        : existing.unit == 'ud'
+        ? 1.0
+        : (info?.unit == existing.unit ? info?.quantity : null);
+    if (existing != null && step != null) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      final total = existing.quantity + step;
+      try {
+        await ref
+            .read(pantryRepositoryProvider)
+            .setQuantity(existing.id!, total);
+        if (mounted) {
+          showSnack(
+            context,
+            '${existing.name}: ahora tienes ${existing.copyWith(quantity: total).quantityLabel}.',
+          );
+        }
+      } catch (e) {
+        if (mounted) showSnack(context, friendlyError(e));
+      }
+      return;
+    }
     final price = await ref
         .read(shoppingRepositoryProvider)
-        .lastPrice(widget.householdId, info?.name ?? '', barcode: code);
+        .lastPrice(widget.householdId, scanned.name, barcode: code);
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     if (info == null) {
@@ -68,8 +101,9 @@ class _PantryPageState extends ConsumerState<PantryPage> {
     await _addManual(
       PantryItem(
         householdId: widget.householdId,
-        name: info?.name ?? '',
+        name: scanned.name,
         brand: info?.brand,
+        summary: scanned.summary,
         barcode: code,
         quantity: info?.quantity ?? 1,
         unit: info?.unit ?? 'ud',

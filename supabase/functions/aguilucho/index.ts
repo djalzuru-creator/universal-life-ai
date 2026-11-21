@@ -1,4 +1,4 @@
-// Aguilucho IA: propone ropa y recetas con Google Gemini (capa gratuita).
+// Aguilucho IA: propone ropa, recetas y traduce productos con Google Gemini (capa gratuita).
 // La clave GEMINI_API_KEY vive solo en los secretos de Supabase, nunca en la app.
 // Los datos se leen con la sesión de quien llama, así que las reglas de permisos
 // (RLS) siguen mandando: nadie ve ropa ni despensa que no le toca.
@@ -122,6 +122,21 @@ Responde SOLO este JSON: {"recipes": [{"name": "", "minutes": 30, "ingredients":
   return json({ recipes: list2 });
 }
 
+async function product(body: Record<string, unknown>) {
+  const name = clean(body.name, 120);
+  if (!name) return json({ error: 'datos' }, 400);
+  const prompt = `Eres Aguilucho y ayudas a una familia española con su despensa.
+Producto escaneado (puede estar en francés u otro idioma):
+- Nombre: ${name}
+- Marca: ${clean(body.brand, 80) || '-'}
+- Descripción: ${clean(body.generic, 200) || '-'}
+- Categorías: ${clean(body.categories, 200) || '-'}
+Da el nombre en español, corto y claro (como se diría en un supermercado de España, sin la marca), y un resumen de una frase en español de qué es y para qué sirve.
+Responde SOLO este JSON: {"name": "", "summary": ""}`;
+  const out = await gemini(prompt);
+  return json({ name: clean(out.name, 120), summary: clean(out.summary, 300) });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'metodo' }, 405);
@@ -129,6 +144,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     if (body.mode === 'outfit') return await outfit(req, body);
     if (body.mode === 'recipes') return await recipes(req, body);
+    if (body.mode === 'product') return await product(body);
     return json({ error: 'modo' }, 400);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

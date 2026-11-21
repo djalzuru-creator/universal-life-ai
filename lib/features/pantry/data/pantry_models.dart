@@ -25,6 +25,7 @@ class PantryItem {
     this.expiresOn,
     this.price,
     this.imageUrl,
+    this.summary,
   });
 
   final String? id;
@@ -39,6 +40,9 @@ class PantryItem {
   final double? price;
   final String? imageUrl;
 
+  /// Resumen en español de qué es (lo escribe Aguilucho al escanear).
+  final String? summary;
+
   /// Días hasta la caducidad (negativo si ya caducó).
   int? daysLeft(DateTime today) {
     final e = expiresOn;
@@ -46,6 +50,21 @@ class PantryItem {
     final t = DateTime(today.year, today.month, today.day);
     return DateTime(e.year, e.month, e.day).difference(t).inDays;
   }
+
+  PantryItem copyWith({double? quantity}) => PantryItem(
+    id: id,
+    householdId: householdId,
+    name: name,
+    brand: brand,
+    barcode: barcode,
+    quantity: quantity ?? this.quantity,
+    unit: unit,
+    location: location,
+    expiresOn: expiresOn,
+    price: price,
+    imageUrl: imageUrl,
+    summary: summary,
+  );
 
   ExpiryStatus expiry(DateTime today) {
     final d = daysLeft(today);
@@ -76,6 +95,7 @@ class PantryItem {
         : DateTime.parse(j['expires_on'] as String),
     price: (j['price'] as num?)?.toDouble(),
     imageUrl: j['image_url'] as String?,
+    summary: j['summary'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -93,5 +113,6 @@ class PantryItem {
               '${expiresOn!.day.toString().padLeft(2, '0')}',
     'price': price,
     'image_url': imageUrl,
+    'summary': summary,
   };
 }

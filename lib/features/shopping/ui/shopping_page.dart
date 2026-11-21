@@ -7,6 +7,7 @@ import '../../household/data/providers.dart';
 import '../../household/ui/common.dart';
 import '../../pantry/data/pantry_models.dart';
 import '../../pantry/data/pantry_repository.dart';
+import '../../pantry/data/scan_lookup.dart';
 import '../../pantry/ui/scanner_page.dart';
 import '../data/shopping_repository.dart';
 
@@ -72,22 +73,156 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> {
         .push<String>(MaterialPageRoute(builder: (_) => const ScannerPage()));
     if (code == null || !mounted) return;
     showSnack(context, 'Buscando el producto…');
-    final info = await ref.read(openFoodFactsProvider).lookup(code);
+    final scanned = await ref.read(scanLookupProvider)(code);
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    if (info == null) {
+    if (scanned.info == null) {
       showSnack(context, 'No lo encuentro. Escríbelo a mano.');
       return;
     }
-    await _add(
-      ShoppingItem(
-        householdId: widget.householdId,
-        name: info.name.isEmpty ? code : info.name,
-        brand: info.brand,
-        barcode: code,
-      ),
-    );
+    final hid = widget.householdId;
+    final pantryAccess =
+        ref
+            .read(
+              moduleAccessProvider((
+                householdId: hid,
+                module: AppModule.pantry,
+              )),
+            )
+            .value ??
+        const {};
+    final canPantry = pantryAccess.contains(PermissionAction.create);
+    final bought = canPantry
+        ? await showModalBottomSheet<bool>(
+            context: context,
+            showDragHandle: true,
+            builder: (ctx) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          scanned.name,
+                          style: Theme.of(ctx).textTheme.titleLarge,
+                        ),
+                        if (scanned.summary != null) Text(scanned.summary!),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.kitchen_outlined),
+                    title: const Text('Ya lo he comprado'),
+                    subtitle: const Text('Se guarda en la despensa'),
+                    onTap: () => Navigator.pop(ctx, true),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.add_shopping_cart),
+                    title: const Text('Apuntarlo en la lista'),
+                    onTap: () => Navigator.pop(ctx, false),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          )
+        : false;
+    if (bought == null || !mounted) return;
+    final list = ref.read(shoppingItemsProvider(hid)).value ?? const [];
+    final onList = list
+        .where((i) => !i.isChecked && i.barcode == code)
+        .firstOrNull;
+    final repo = ref.read(shoppingRepositoryProvider);
+    if (!bought) {
+      // Escanear otra vez lo que ya está apuntado suma uno más.
+      if (onList != null && onList.unit == 'ud') {
+        await _run(() => repo.setQuantity(onList.id!, onList.quantity + 1));
+        if (mounted) {
+          showSnack(
+            context,
+            '${onList.name}: ${(onList.quantity + 1).toStringAsFixed(0)} en la lista.',
+          );
+        }
+        return;
+      }
+      await _add(
+        ShoppingItem(
+          householdId: hid,
+          name: scanned.name,
+          brand: scanned.info!.brand,
+          barcode: code,
+          note: scanned.summary,
+        ),
+      );
+      return;
+    }
+    await _run(() async {
+      final info = scanned.info!;
+      final pantry = ref.read(pantryItemsProvider(hid)).value ?? const [];
+      final existing = pantry.where((p) => p.barcode == code).firstOrNull;
+      final step = existing == null
+          ? null
+          : existing.unit == 'ud'
+          ? 1.0
+          : (info.unit == existing.unit ? info.quantity : null);
+      final pantryRepo = ref.read(pantryRepositoryProvider);
+      String message;
+      if (existing != null && step != null) {
+        final total = existing.quantity + step;
+        await pantryRepo.setQuantity(existing.id!, total);
+        message =
+            '${existing.name}: ahora tienes ${existing.copyWith(quantity: total).quantityLabel} en la despensa.';
+      } else {
+        final location = await _askLocation();
+        if (location == null) return;
+        final price =
+            onList?.price ??
+            await repo.lastPrice(hid, scanned.name, barcode: code);
+        await pantryRepo.add(
+          PantryItem(
+            householdId: hid,
+            name: scanned.name,
+            brand: info.brand,
+            barcode: code,
+            quantity: info.quantity ?? 1,
+            unit: info.unit ?? 'ud',
+            location: location,
+            imageUrl: info.imageUrl,
+            price: price,
+            summary: scanned.summary,
+          ),
+        );
+        message = '${scanned.name} guardado en ${location.label}.';
+      }
+      // Si estaba en la lista, se tacha (o se resta uno).
+      if (onList != null) {
+        if (onList.unit == 'ud' && onList.quantity > 1) {
+          await repo.setQuantity(onList.id!, onList.quantity - 1);
+        } else {
+          await repo.delete(onList.id!);
+        }
+      }
+      if (mounted) showSnack(context, message);
+    });
   }
+
+  Future<PantryLocation?> _askLocation() => showDialog<PantryLocation>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: const Text('¿Dónde lo guardas?'),
+      children: [
+        for (final l in PantryLocation.values)
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, l),
+            child: Text(l.label),
+          ),
+      ],
+    ),
+  );
 
   Future<void> _toPantry(List<ShoppingItem> checked) async {
     final location = await showDialog<PantryLocation>(

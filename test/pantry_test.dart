@@ -75,4 +75,33 @@ void main() {
     expect(OpenFoodFacts.isValidBarcode('84100'), isFalse);
     expect(OpenFoodFacts.isValidBarcode('8410000000001'), isTrue);
   });
+
+  test('Open Food Facts: producto francés no viene en español', () {
+    final info = OpenFoodFacts.parse({
+      'status': 1,
+      'product': {
+        'product_name': 'Lait demi-écrémé',
+        'lang': 'fr',
+        'generic_name': 'Lait UHT',
+        'categories': 'Laits',
+      },
+    });
+    expect(info!.isSpanish, isFalse);
+    expect(info.generic, 'Lait UHT');
+    expect(info.categories, 'Laits');
+  });
+
+  test('el resumen se guarda y se conserva al cambiar la cantidad', () {
+    const item = PantryItem(
+      id: 'x',
+      householdId: 'h',
+      name: 'Leche',
+      summary: 'Leche semidesnatada.',
+    );
+    expect(item.toJson()['summary'], 'Leche semidesnatada.');
+    final two = item.copyWith(quantity: 2);
+    expect(two.quantity, 2);
+    expect(two.summary, 'Leche semidesnatada.');
+    expect(two.id, 'x');
+  });
 }
