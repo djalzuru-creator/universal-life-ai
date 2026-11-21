@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../household/data/household_repository.dart';
 import '../../household/data/models.dart';
 import '../../household/data/providers.dart';
+import '../../ai/aguilucho_ai.dart';
 import '../../household/ui/common.dart';
 import '../data/outfit_suggester.dart';
 import '../data/wardrobe_models.dart';
@@ -336,6 +337,14 @@ class _TodayTabState extends ConsumerState<_TodayTab> {
                             ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      _AiOutfitCard(
+                        garments: list,
+                        weather: w,
+                        season: Season.of(DateTime.now(), latitude: h.latitude),
+                        householdId: widget.householdId,
+                        memberId: widget.memberId,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'Propuesta según estación, temperatura y lo que tienes en el armario.',
@@ -348,6 +357,179 @@ class _TodayTabState extends ConsumerState<_TodayTab> {
           ],
         );
       },
+    );
+  }
+}
+
+const _occasions = [
+  'Día a día',
+  'Trabajo',
+  'Colegio',
+  'Deporte',
+  'Fiesta',
+  'Cita',
+];
+
+/// Aguilucho con IA (Gemini) propone un conjunto y explica por qué.
+class _AiOutfitCard extends ConsumerStatefulWidget {
+  const _AiOutfitCard({
+    required this.garments,
+    required this.weather,
+    required this.season,
+    required this.householdId,
+    required this.memberId,
+  });
+  final List<Garment> garments;
+  final TodayWeather weather;
+  final Season season;
+  final String householdId;
+  final String memberId;
+
+  @override
+  ConsumerState<_AiOutfitCard> createState() => _AiOutfitCardState();
+}
+
+class _AiOutfitCardState extends ConsumerState<_AiOutfitCard> {
+  String _occasion = _occasions.first;
+  bool _busy = false;
+  AiOutfit? _result;
+  String? _error;
+
+  Future<void> _ask() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final w = widget.weather;
+      final r = await ref
+          .read(aguiluchoAiProvider)
+          .outfit(
+            memberId: widget.memberId,
+            season: widget.season.label,
+            occasion: _occasion,
+            weather: {
+              'current': w.current,
+              'feels_like': w.feelsLike,
+              'min': w.min,
+              'max': w.max,
+              'rain': w.rainChance,
+            },
+          );
+      if (mounted) setState(() => _result = r);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final byId = {for (final g in widget.garments) g.id: g};
+    final picked = [
+      for (final id in _result?.garmentIds ?? const <String>[]) ?byId[id],
+    ];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Pregúntale a Aguilucho',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final o in _occasions)
+                  ChoiceChip(
+                    label: Text(o),
+                    selected: _occasion == o,
+                    onSelected: _busy
+                        ? null
+                        : (_) => setState(() => _occasion = o),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _busy ? null : _ask,
+              icon: _busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome),
+              label: Text(_busy ? 'Pensando…' : '¿Qué me pongo?'),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (_result case final r?) ...[
+              const SizedBox(height: 12),
+              if (picked.isNotEmpty) _GarmentStrip(picked),
+              if (r.why.isNotEmpty) ...[const SizedBox(height: 8), Text(r.why)],
+              if (r.tip.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '💡 ${r.tip}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (picked.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.bookmark_add_outlined),
+                    label: const Text('Guardar conjunto'),
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(wardrobeRepositoryProvider)
+                            .saveOutfit(
+                              Outfit(
+                                householdId: widget.householdId,
+                                memberId: widget.memberId,
+                                name: 'Aguilucho: $_occasion',
+                                garmentIds: [for (final g in picked) g.id!],
+                                occasion: _occasion,
+                              ),
+                            );
+                        ref.invalidate(outfitsProvider(widget.memberId));
+                        if (context.mounted) {
+                          showSnack(context, 'Guardado en Conjuntos.');
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          showSnack(context, friendlyError(e));
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

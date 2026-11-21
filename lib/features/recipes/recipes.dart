@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../ai/aguilucho_ai.dart';
 import '../household/data/household_repository.dart';
 import '../household/data/models.dart';
 import '../household/ui/common.dart';
@@ -414,6 +415,13 @@ class RecipesPage extends ConsumerWidget {
               ),
             ),
           ),
+          if (pantryAccess.contains(PermissionAction.view)) ...[
+            const SizedBox(height: 12),
+            _AiRecipesCard(
+              householdId: householdId,
+              canAddToList: canAddToList,
+            ),
+          ],
           const SizedBox(height: 12),
           for (final m in matches)
             Card(
@@ -522,4 +530,175 @@ class RecipesPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Aguilucho con IA (Gemini) inventa recetas con lo que hay en la despensa.
+class _AiRecipesCard extends ConsumerStatefulWidget {
+  const _AiRecipesCard({required this.householdId, required this.canAddToList});
+  final String householdId;
+  final bool canAddToList;
+
+  @override
+  ConsumerState<_AiRecipesCard> createState() => _AiRecipesCardState();
+}
+
+class _AiRecipesCardState extends ConsumerState<_AiRecipesCard> {
+  final _wish = TextEditingController();
+  bool _busy = false;
+  String? _error;
+  List<AiRecipe> _recipes = const [];
+
+  @override
+  void dispose() {
+    _wish.dispose();
+    super.dispose();
+  }
+
+  Future<void> _ask() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final r = await ref
+          .read(aguiluchoAiProvider)
+          .recipes(householdId: widget.householdId, wish: _wish.text);
+      if (mounted) setState(() => _recipes = r);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _open(AiRecipe r) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        builder: (ctx, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+          children: [
+            Text(r.name, style: Theme.of(ctx).textTheme.headlineSmall),
+            Text('${r.minutes} minutos · receta de Aguilucho'),
+            const SizedBox(height: 16),
+            Text('Ingredientes', style: Theme.of(ctx).textTheme.titleMedium),
+            for (final i in r.ingredients)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('• $i'),
+              ),
+            if (r.missing.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Falta: ${r.missing.join(', ')}'),
+              if (widget.canAddToList) ...[
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: const Text('Añadir lo que falta a la compra'),
+                  onPressed: () async {
+                    try {
+                      final repo = ref.read(shoppingRepositoryProvider);
+                      for (final n in r.missing) {
+                        await repo.add(
+                          ShoppingItem(
+                            householdId: widget.householdId,
+                            name: n,
+                          ),
+                        );
+                      }
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                      }
+                      if (mounted) {
+                        showSnack(context, 'Añadido a la compra.');
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) showSnack(ctx, friendlyError(e));
+                    }
+                  },
+                ),
+              ],
+            ],
+            const SizedBox(height: 16),
+            Text('Pasos', style: Theme.of(ctx).textTheme.titleMedium),
+            for (final (n, s) in r.steps.indexed)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text('${n + 1}. $s'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome),
+              const SizedBox(width: 8),
+              Text(
+                'Recetas de Aguilucho',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _wish,
+            maxLength: 80,
+            decoration: const InputDecoration(
+              hintText: 'Opcional: algo rápido, sin horno, para niños…',
+              counterText: '',
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _busy ? null : _ask,
+            icon: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_awesome),
+            label: Text(
+              _busy ? 'Pensando…' : 'Inventa recetas con mi despensa',
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          for (final r in _recipes)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.restaurant_menu),
+              title: Text(r.name),
+              subtitle: Text(
+                r.missing.isEmpty
+                    ? '${r.minutes} min · Lo tienes todo'
+                    : '${r.minutes} min · Falta: ${r.missing.join(', ')}',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _open(r),
+            ),
+        ],
+      ),
+    ),
+  );
 }
