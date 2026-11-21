@@ -54,6 +54,9 @@ class _PantryPageState extends ConsumerState<PantryPage> {
     if (code == null || !mounted) return;
     showSnack(context, 'Buscando el producto…');
     final info = await ref.read(openFoodFactsProvider).lookup(code);
+    final price = await ref
+        .read(shoppingRepositoryProvider)
+        .lastPrice(widget.householdId, info?.name ?? '', barcode: code);
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     if (info == null) {
@@ -71,6 +74,7 @@ class _PantryPageState extends ConsumerState<PantryPage> {
         quantity: info?.quantity ?? 1,
         unit: info?.unit ?? 'ud',
         imageUrl: info?.imageUrl,
+        price: price,
       ),
     );
   }
