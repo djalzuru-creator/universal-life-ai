@@ -21,6 +21,7 @@ end $$;
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
 select public.create_household('Casa C', 'Papá') as hid \gset
+select set_config('test.hid', :'hid', false);
 insert into invitations (household_id, display_name, role, created_by)
   values (:'hid', 'Sara', 'child', '00000000-0000-0000-0000-0000000000c1') returning code \gset
 insert into shopping_items (household_id, name, quantity, unit) values (:'hid', 'Pan', 1, 'ud');
@@ -31,13 +32,14 @@ select pg_temp.check((select checked_at is null from shopping_items), 'al desmar
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
 select public.accept_invitation(:'code');
-select pg_temp.check((select count(*) from shopping_items) = 1, 'niña ve la lista');
-insert into shopping_items (household_id, name) values (:'hid', 'Galletas');
-select pg_temp.check((select count(*) from shopping_items) = 2, 'niña añade a la lista');
-update shopping_items set is_checked = true;
-delete from shopping_items;
-select pg_temp.check((select count(*) from shopping_items where is_checked) = 0, 'niña no marca comprado (sin permiso de editar)');
-select pg_temp.check((select count(*) from shopping_items) = 2, 'niña no borra');
+select pg_temp.check((select count(*) from shopping_items) = 0, 'niña no ve la lista');
+do $$ begin
+  insert into shopping_items (household_id, name) values (current_setting('test.hid')::uuid, 'Galletas');
+  raise exception 'FALLO: niña añade a la lista';
+exception when others then
+  if sqlerrm like 'FALLO%' then raise; end if;
+  raise notice 'ok: niña no añade a la lista';
+end $$;
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000c3');
 select public.create_household('Casa X', 'X');
