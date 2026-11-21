@@ -21,7 +21,8 @@ enum AppModule {
   budget('Presupuesto'),
   recipes('Recetas'),
   wardrobe('Armario'),
-  agenda('Agenda');
+  agenda('Agenda'),
+  photos('Fotos');
 
   const AppModule(this.label);
   final String label;

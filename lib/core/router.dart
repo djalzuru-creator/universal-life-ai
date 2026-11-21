@@ -15,6 +15,7 @@ import '../features/household/ui/home_page.dart';
 import '../features/household/ui/member_permissions_page.dart';
 import '../features/household/ui/start_page.dart';
 import '../features/pantry/ui/pantry_page.dart';
+import '../features/photos/photos.dart';
 import '../features/recipes/recipes.dart';
 import '../features/shopping/ui/shopping_page.dart';
 import '../features/wardrobe/ui/wardrobe_page.dart';
@@ -69,6 +70,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'wardrobe',
             builder: (_, s) =>
                 WardrobePage(householdId: s.pathParameters['hid']!),
+          ),
+          GoRoute(
+            path: 'photos',
+            builder: (_, s) =>
+                PhotosPage(householdId: s.pathParameters['hid']!),
           ),
           GoRoute(
             path: 'agenda',
