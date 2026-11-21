@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../backup/backup.dart';
+
 import 'package:go_router/go_router.dart';
 
 import '../data/household_repository.dart';
@@ -36,6 +39,8 @@ class AdminPage extends ConsumerWidget {
         },
         child: PageBody(
           children: [
+            BackupCard(householdId: householdId),
+            const SizedBox(height: 16),
             Text('Miembros', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             members.when(
