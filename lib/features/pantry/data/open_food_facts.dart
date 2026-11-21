@@ -10,6 +10,9 @@ class ProductInfo {
     this.quantity,
     this.unit,
     this.imageUrl,
+    this.isSpanish = false,
+    this.generic,
+    this.categories,
   });
 
   final String name;
@@ -17,6 +20,11 @@ class ProductInfo {
   final double? quantity;
   final String? unit;
   final String? imageUrl;
+
+  /// El nombre ya venía en español.
+  final bool isSpanish;
+  final String? generic;
+  final String? categories;
 }
 
 /// Consulta Open Food Facts (base de datos abierta y gratuita).
@@ -36,7 +44,7 @@ class OpenFoodFacts {
       'world.openfoodfacts.org',
       '/api/v2/product/$barcode.json',
       {
-        'fields': 'product_name,product_name_es,brands,product_quantity,product_quantity_unit,image_front_small_url',
+        'fields': 'product_name,product_name_es,generic_name,generic_name_es,categories,lang,brands,product_quantity,product_quantity_unit,image_front_small_url',
       },
     );
     try {
@@ -56,7 +64,8 @@ class OpenFoodFacts {
       return v is String && v.trim().isNotEmpty ? v.trim() : null;
     }
 
-    final name = text('product_name_es') ?? text('product_name');
+    final es = text('product_name_es');
+    final name = es ?? text('product_name');
     if (name == null) return null;
     final brand = text('brands')?.split(',').first.trim();
     final rawQty = p['product_quantity'];
@@ -75,6 +84,9 @@ class OpenFoodFacts {
           : (rawUnit == 'cl' ? qty * 10 : qty),
       unit: qty == null ? null : unit,
       imageUrl: image != null && image.startsWith('https://') ? image : null,
+      isSpanish: es != null || text('lang') == 'es',
+      generic: text('generic_name_es') ?? text('generic_name'),
+      categories: text('categories'),
     );
   }
 }

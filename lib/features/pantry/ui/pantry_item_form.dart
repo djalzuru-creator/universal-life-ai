@@ -79,6 +79,7 @@ class _PantryItemFormState extends ConsumerState<_PantryItemForm> {
       expiresOn: _expires,
       price: _parse(_price.text),
       imageUrl: widget.initial.imageUrl,
+      summary: widget.initial.summary,
     );
     final repo = ref.read(pantryRepositoryProvider);
     try {
@@ -151,6 +152,11 @@ class _PantryItemFormState extends ConsumerState<_PantryItemForm> {
                 ),
               ],
             ),
+            if (widget.initial.summary case final s?)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(s, style: theme.textTheme.bodyMedium),
+              ),
             if (widget.initial.barcode != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

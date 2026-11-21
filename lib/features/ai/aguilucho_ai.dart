@@ -122,6 +122,28 @@ class AguiluchoAi {
   }
 }
 
+extension ProductAi on AguiluchoAi {
+  /// Nombre en español y resumen de un producto escaneado.
+  Future<({String name, String summary})> product({
+    required String name,
+    String? brand,
+    String? generic,
+    String? categories,
+  }) async {
+    final d = await _call({
+      'mode': 'product',
+      'name': name,
+      'brand': ?brand,
+      'generic': ?generic,
+      'categories': ?categories,
+    });
+    return (
+      name: (d['name'] as String? ?? '').trim(),
+      summary: (d['summary'] as String? ?? '').trim(),
+    );
+  }
+}
+
 final aguiluchoAiProvider = Provider(
   (ref) => AguiluchoAi(ref.watch(supabaseProvider)),
 );
