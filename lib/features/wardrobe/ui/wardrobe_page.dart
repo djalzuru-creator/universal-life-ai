@@ -10,6 +10,7 @@ import '../data/wardrobe_models.dart';
 import '../data/wardrobe_repository.dart';
 import '../data/weather.dart';
 import 'garment_form.dart';
+import 'fitting_room.dart';
 import 'garment_photo.dart';
 
 typedef _AccessKey = ({String householdId, String memberId});
@@ -56,7 +57,7 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
             ? ref.watch(membersProvider(widget.householdId)).value
             : null;
         return DefaultTabController(
-          length: 3,
+          length: 4,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Armario'),
@@ -85,6 +86,7 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
                   Tab(icon: Icon(Icons.wb_sunny_outlined), text: 'Hoy'),
                   Tab(icon: Icon(Icons.checkroom), text: 'Prendas'),
                   Tab(icon: Icon(Icons.style_outlined), text: 'Conjuntos'),
+                  Tab(icon: Icon(Icons.accessibility_new), text: 'Probador'),
                 ],
               ),
             ),
@@ -102,6 +104,23 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
                 _OutfitsTab(
                   householdId: widget.householdId,
                   memberId: memberId,
+                ),
+                Consumer(
+                  builder: (context, ref, _) => FittingRoom(
+                    householdId: widget.householdId,
+                    memberId: memberId,
+                    canSave:
+                        ref
+                            .watch(
+                              _wardrobeAccessProvider((
+                                householdId: widget.householdId,
+                                memberId: memberId,
+                              )),
+                            )
+                            .value
+                            ?.contains(PermissionAction.create) ??
+                        false,
+                  ),
                 ),
               ],
             ),
@@ -710,7 +729,11 @@ class _OutfitsTab extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _GarmentStrip([for (final id in o.garmentIds) ?byId[id]]),
+                      Center(
+                        child: OutfitStack([
+                          for (final id in o.garmentIds) ?byId[id],
+                        ], width: 180),
+                      ),
                     ],
                   ),
                 ),
