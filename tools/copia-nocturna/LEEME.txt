@@ -2,7 +2,7 @@ Copia nocturna en el portatil (Windows)
 
 1. Descomprime esta carpeta en el portatil.
 2. Doble clic en instalar.bat.
-3. Escribe el correo y la contrasena de la app.
+3. En la ventana negra escribe el correo, Enter, la contrasena (no se ve al escribir), Enter.
 
 Se crea D:\Aguilera-Copias con las carpetas Armario, Fotos y Datos.
 Cada noche a las 3:00 se actualiza sola (si el portatil esta apagado, al encenderlo).
