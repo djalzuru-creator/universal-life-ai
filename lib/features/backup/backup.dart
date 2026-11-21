@@ -48,7 +48,7 @@ const _tables = [
   'photos',
 ];
 
-/// Crea un ZIP con: Armario/(persona)/…, Fotos/(álbum)/… y datos/*.json.
+/// Crea un ZIP con una carpeta por persona (Armario y Fotos personales) y datos/*.json.
 Future<Uint8List> buildBackup(
   SupabaseClient db,
   String householdId,
@@ -75,6 +75,11 @@ Future<Uint8List> buildBackup(
   final members = {
     for (final m in data['members']!)
       m['id'] as String: safeName(m['display_name'] as String),
+  };
+  final byUser = {
+    for (final m in data['members']!)
+      if (m['user_id'] != null)
+        m['user_id'] as String: safeName(m['display_name'] as String),
   };
   final albums = {
     for (final a in data['albums']!)
@@ -108,17 +113,18 @@ Future<Uint8List> buildBackup(
     await add(
       'wardrobe',
       g['photo_path'] as String,
-      'Armario/$who',
+      '$who/Armario',
       safeName(g['name'] as String),
     );
   }
   for (final p in photos) {
     final album = albums[p['album_id']] ?? 'Sin álbum';
+    final who = byUser[p['created_by']] ?? 'Familia';
     final caption = p['caption'] as String?;
     await add(
       'family-photos',
       p['path'] as String,
-      'Fotos/$album',
+      '$who/Fotos personales/$album',
       safeName('${p['taken_on']}${caption == null ? '' : ' $caption'}'),
     );
   }
@@ -176,7 +182,7 @@ class _BackupCardState extends ConsumerState<BackupCard> {
           busy
               ? _status!
               : canSaveFiles
-              ? 'Descarga un ZIP con las carpetas Armario y Fotos y todos los datos.'
+              ? 'Descarga un ZIP con una carpeta por persona (Armario y Fotos personales) y todos los datos.'
               : 'Hazla desde el ordenador, entrando en la web de la app.',
         ),
         trailing: busy

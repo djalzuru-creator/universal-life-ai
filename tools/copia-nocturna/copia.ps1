@@ -1,7 +1,7 @@
 # Aguilera Valencia - copia de seguridad nocturna de la app familiar.
 # Guarda en la carpeta de destino:
-#   Armario\<persona>\...   fotos de la ropa
-#   Fotos\<album>\...       album familiar
+#   <persona>\Armario\...                  fotos de su ropa
+#   <persona>\Fotos personales\<album>\... fotos que subio esa persona
 #   Datos\<fecha>\*.json    todos los datos (se guardan los ultimos 30 dias)
 #   registro.txt            lo que hizo cada noche
 param([string]$Destino = $PSScriptRoot)
@@ -72,7 +72,11 @@ try {
     }
 
     $personas = @{}
-    foreach ($m in $t['members']) { $personas[$m.id] = Get-SafeName $m.display_name }
+    $porUsuario = @{}
+    foreach ($m in $t['members']) {
+      $personas[$m.id] = Get-SafeName $m.display_name
+      if ($m.user_id) { $porUsuario[$m.user_id] = Get-SafeName $m.display_name }
+    }
     $albumes = @{}
     foreach ($a in $t['albums']) { $albumes[$a.id] = Get-SafeName $a.name }
 
@@ -81,13 +85,14 @@ try {
       if (-not $g.photo_path) { continue }
       $quien = $personas[$g.member_id]; if (-not $quien) { $quien = 'Otros' }
       $nombre = "$(Get-SafeName $g.name) - $($g.id.Substring(0, 8)).$(Get-Ext $g.photo_path)"
-      $copiar += ,@('wardrobe', $g.photo_path, (Join-Path $Destino "Armario\$quien\$nombre"))
+      $copiar += ,@('wardrobe', $g.photo_path, (Join-Path $Destino "$quien\Armario\$nombre"))
     }
     foreach ($p in $t['photos']) {
       $album = $albumes[$p.album_id]; if (-not $album) { $album = 'Sin album' }
+      $quien = $porUsuario[$p.created_by]; if (-not $quien) { $quien = 'Familia' }
       $titulo = $p.taken_on; if ($p.caption) { $titulo = "$titulo $($p.caption)" }
       $nombre = "$(Get-SafeName $titulo) - $($p.id.Substring(0, 8)).$(Get-Ext $p.path)"
-      $copiar += ,@('family-photos', $p.path, (Join-Path $Destino "Fotos\$album\$nombre"))
+      $copiar += ,@('family-photos', $p.path, (Join-Path $Destino "$quien\Fotos personales\$album\$nombre"))
     }
 
     foreach ($c in $copiar) {
