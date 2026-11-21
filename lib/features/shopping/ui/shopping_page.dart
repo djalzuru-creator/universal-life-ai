@@ -7,6 +7,7 @@ import '../../household/data/providers.dart';
 import '../../household/ui/common.dart';
 import '../../pantry/data/pantry_models.dart';
 import '../../pantry/data/pantry_repository.dart';
+import '../../pantry/ui/scanner_page.dart';
 import '../data/shopping_repository.dart';
 
 typedef _ModuleKey = ({String householdId, AppModule module});
@@ -53,10 +54,38 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
-    await _run(
-      () => ref
-          .read(shoppingRepositoryProvider)
-          .add(ShoppingItem(householdId: widget.householdId, name: text)),
+    await _add(ShoppingItem(householdId: widget.householdId, name: text));
+  }
+
+  Future<void> _add(ShoppingItem item) => _run(() async {
+    final price = await ref.read(shoppingRepositoryProvider).add(item);
+    if (price != null && mounted) {
+      showSnack(
+        context,
+        '${item.name}: ${price.toStringAsFixed(2).replaceAll('.', ',')} € (último precio que pagasteis)',
+      );
+    }
+  });
+
+  Future<void> _scan() async {
+    final code = await Navigator.of(context)
+        .push<String>(MaterialPageRoute(builder: (_) => const ScannerPage()));
+    if (code == null || !mounted) return;
+    showSnack(context, 'Buscando el producto…');
+    final info = await ref.read(openFoodFactsProvider).lookup(code);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (info == null) {
+      showSnack(context, 'No lo encuentro. Escríbelo a mano.');
+      return;
+    }
+    await _add(
+      ShoppingItem(
+        householdId: widget.householdId,
+        name: info.name.isEmpty ? code : info.name,
+        brand: info.brand,
+        barcode: code,
+      ),
     );
   }
 
@@ -248,9 +277,19 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> {
                   decoration: InputDecoration(
                     hintText: 'Añadir a la lista (leche, pan…)',
                     prefixIcon: const Icon(Icons.add_shopping_cart),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _quickAdd,
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Escanear código de barras',
+                          icon: const Icon(Icons.qr_code_scanner),
+                          onPressed: _scan,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: _quickAdd,
+                        ),
+                      ],
                     ),
                   ),
                   onSubmitted: (_) => _quickAdd(),
@@ -270,11 +309,7 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> {
                       ActionChip(
                         avatar: const Icon(Icons.add, size: 18),
                         label: Text(p.name),
-                        onPressed: () => _run(
-                          () => ref
-                              .read(shoppingRepositoryProvider)
-                              .add(ShoppingItem.fromPantry(p)),
-                        ),
+                        onPressed: () => _add(ShoppingItem.fromPantry(p)),
                       ),
                   ],
                 ),
@@ -287,6 +322,18 @@ class _ShoppingPageState extends ConsumerState<ShoppingPage> {
                     'La lista está vacía.',
                     textAlign: TextAlign.center,
                   ),
+                ),
+              if (pending.any((i) => i.price != null))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(() {
+                    final known = pending.where((i) => i.price != null);
+                    final total = known.fold<double>(0, (a, i) => a + i.price!);
+                    final t = total.toStringAsFixed(2).replaceAll('.', ',');
+                    return known.length == pending.length
+                        ? 'Total estimado: $t €'
+                        : 'Total estimado: $t € (${known.length} de ${pending.length} con precio)';
+                  }(), style: theme.textTheme.titleSmall),
                 ),
               if (pending.isNotEmpty)
                 Card(

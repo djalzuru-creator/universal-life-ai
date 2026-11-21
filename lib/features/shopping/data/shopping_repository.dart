@@ -95,8 +95,55 @@ class ShoppingRepository {
       .order('created_at')
       .map((rows) => rows.map(ShoppingItem.fromJson).toList());
 
-  Future<void> add(ShoppingItem item) =>
-      _db.from('shopping_items').insert(item.toJson());
+  /// Añade a la lista. Si no trae precio, pone el último que se pagó.
+  Future<double?> add(ShoppingItem item) async {
+    final price =
+        item.price ??
+        await lastPrice(item.householdId, item.name, barcode: item.barcode);
+    await _db.from('shopping_items').insert(item.toJson()..['price'] = price);
+    return price;
+  }
+
+  /// Último precio pagado por un producto (por código de barras o por nombre),
+  /// buscando en la despensa y en la lista. Null si nunca se apuntó.
+  Future<double?> lastPrice(
+    String householdId,
+    String name, {
+    String? barcode,
+  }) async {
+    final safe = name.trim().replaceAll(RegExp(r'[%_\\,()"]'), '');
+    if (safe.isEmpty && barcode == null) return null;
+    final match = [
+      if (barcode != null) 'barcode.eq.$barcode',
+      if (safe.isNotEmpty) 'name.ilike."$safe"',
+    ].join(',');
+    Future<({double price, DateTime at})?> find(String table, String at) async {
+      try {
+        final rows = await _db
+            .from(table)
+            .select('price, $at')
+            .eq('household_id', householdId)
+            .not('price', 'is', null)
+            .or(match)
+            .order(at, ascending: false)
+            .limit(1);
+        if (rows.isEmpty) return null;
+        final r = rows.first;
+        return (
+          price: (r['price'] as num).toDouble(),
+          at: DateTime.parse(r[at] as String),
+        );
+      } catch (_) {
+        return null; // sin permiso o sin red: no pasa nada
+      }
+    }
+
+    final hits = [
+      ?await find('pantry_items', 'created_at'),
+      ?await find('shopping_items', 'created_at'),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+    return hits.isEmpty ? null : hits.first.price;
+  }
 
   Future<void> setChecked(String id, bool checked) =>
       _db.from('shopping_items').update({'is_checked': checked}).eq('id', id);
