@@ -1,11 +1,11 @@
 {
-    "name": "Universal Life AI",
-    "short_name": "Universal Life",
+    "name": "Aguilera Valencia",
+    "short_name": "Aguilera",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#2E7D6B",
-    "description": "La app de tu hogar",
+    "background_color": "#0A0614",
+    "theme_color": "#0A0614",
+    "description": "Universal Life: la app de la familia Aguilera Valencia",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

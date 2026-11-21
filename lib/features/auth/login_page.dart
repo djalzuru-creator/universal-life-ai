@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/brand_widgets.dart';
 import '../household/data/household_repository.dart';
 import '../household/data/providers.dart';
 
@@ -72,20 +73,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.home_rounded,
-                    size: 56,
-                    color: theme.colorScheme.primary,
-                  ),
+                  const Center(child: Emblem(size: 120)),
                   const SizedBox(height: 12),
                   Text(
-                    'Universal Life AI',
+                    'Aguilera Valencia',
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'La app de tu hogar',
+                    'Universal Life · la app de la familia',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),

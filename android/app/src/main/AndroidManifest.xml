@@ -2,7 +2,7 @@
     <!-- Necesario para hablar con Supabase, Open Food Facts y Open-Meteo en la versión publicada. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="Universal Life AI"
+        android:label="Aguilera"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

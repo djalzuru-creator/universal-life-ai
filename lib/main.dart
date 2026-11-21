@@ -25,9 +25,12 @@ class UniversalLifeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Universal Life AI',
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
+      title: 'Aguilera Valencia',
+      theme: buildTheme(),
+      builder: (context, child) => DecoratedBox(
+        decoration: Brand.backdrop,
+        child: child ?? const SizedBox.shrink(),
+      ),
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
     );
@@ -40,7 +43,7 @@ class _MissingConfigApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: buildTheme(Brightness.light),
+      theme: buildTheme(),
       home: const Scaffold(
         body: Center(
           child: Padding(
