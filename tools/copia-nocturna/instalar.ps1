@@ -14,8 +14,11 @@ New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 Copy-Item -Force (Join-Path $PSScriptRoot 'copia.ps1') (Join-Path $Destino 'copia.ps1')
 
 Write-Host 'Escribe el correo y la contrasena con los que entras en la app.'
-$cred = Get-Credential -Message 'Cuenta de la app (correo y contrasena)'
-if (-not $cred) { exit 1 }
+Write-Host '(Al escribir la contrasena no se ven las letras: es normal. Pulsa Enter al terminar.)'
+$correo = (Read-Host 'Correo').Trim()
+$clave = Read-Host 'Contrasena' -AsSecureString
+if (-not $correo) { Write-Host 'Falta el correo.' -ForegroundColor Red; Read-Host 'Pulsa Enter para salir'; exit 1 }
+$cred = New-Object System.Management.Automation.PSCredential ($correo, $clave)
 $cred | Export-Clixml (Join-Path $Destino 'cuenta.xml')
 
 $accion = New-ScheduledTaskAction -Execute 'powershell.exe' `
@@ -29,7 +32,12 @@ Register-ScheduledTask -TaskName 'Copia familia Aguilera' -Action $accion -Trigg
 Write-Host 'Haciendo la primera copia ahora...' -ForegroundColor Magenta
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$Destino\copia.ps1" -Destino $Destino
 Write-Host ''
-Write-Host "Listo. Tus copias estan en $Destino" -ForegroundColor Green
-Write-Host 'Cada noche a las 3:00 se guardaran solas.'
+if ($LASTEXITCODE -eq 0) {
+  Write-Host "Listo. Tus copias estan en $Destino" -ForegroundColor Green
+  Write-Host 'Cada noche a las 3:00 se guardaran solas.'
+} else {
+  Write-Host 'La primera copia ha fallado (mira el mensaje de arriba).' -ForegroundColor Red
+  Write-Host 'Haz una foto de esta ventana y mandasela a Claude.'
+}
 Start-Process explorer.exe $Destino
 Read-Host 'Pulsa Enter para cerrar'

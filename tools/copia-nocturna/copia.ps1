@@ -1,7 +1,7 @@
 # Aguilera Valencia - copia de seguridad nocturna de la app familiar.
 # Guarda en la carpeta de destino:
-#   Armario\<persona>\...   fotos de la ropa
-#   Fotos\<album>\...       album familiar
+#   <persona>\Armario\...                  fotos de su ropa
+#   <persona>\Fotos personales\<album>\... fotos que subio esa persona
 #   Datos\<fecha>\*.json    todos los datos (se guardan los ultimos 30 dias)
 #   registro.txt            lo que hizo cada noche
 param([string]$Destino = $PSScriptRoot)
@@ -37,9 +37,25 @@ try {
   $email = $cred.UserName
   $pass = $cred.GetNetworkCredential().Password
 
-  $login = Invoke-RestMethod -Method Post -Uri "$Url/auth/v1/token?grant_type=password" `
-    -Headers @{ apikey = $Key } -ContentType 'application/json' `
-    -Body (@{ email = $email; password = $pass } | ConvertTo-Json)
+  # El cuerpo se manda en UTF-8 (PowerShell 5 usa otra codificacion y fallan tildes o la n).
+  $body = [Text.Encoding]::UTF8.GetBytes((@{ email = $email.Trim(); password = $pass } | ConvertTo-Json -Compress))
+  try {
+    $login = Invoke-RestMethod -Method Post -Uri "$Url/auth/v1/token?grant_type=password" `
+      -Headers @{ apikey = $Key } -ContentType 'application/json; charset=utf-8' -Body $body
+  } catch {
+    $detalle = ''
+    try {
+      $r = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+      $detalle = $r.ReadToEnd()
+    } catch {}
+    if ($detalle -match 'invalid_credentials|Invalid login') {
+      throw 'Correo o contrasena incorrectos. Vuelve a abrir instalar.bat y escribelos otra vez.'
+    }
+    if ($detalle -match 'email_not_confirmed') {
+      throw 'Ese correo aun no esta confirmado. Confirmalo desde el email de bienvenida.'
+    }
+    throw "No se pudo entrar con tu cuenta. $detalle"
+  }
   $H = @{ apikey = $Key; Authorization = "Bearer $($login.access_token)" }
 
   function Get-Rows([string]$table, [string]$filter) {
@@ -72,7 +88,11 @@ try {
     }
 
     $personas = @{}
-    foreach ($m in $t['members']) { $personas[$m.id] = Get-SafeName $m.display_name }
+    $porUsuario = @{}
+    foreach ($m in $t['members']) {
+      $personas[$m.id] = Get-SafeName $m.display_name
+      if ($m.user_id) { $porUsuario[$m.user_id] = Get-SafeName $m.display_name }
+    }
     $albumes = @{}
     foreach ($a in $t['albums']) { $albumes[$a.id] = Get-SafeName $a.name }
 
@@ -81,13 +101,14 @@ try {
       if (-not $g.photo_path) { continue }
       $quien = $personas[$g.member_id]; if (-not $quien) { $quien = 'Otros' }
       $nombre = "$(Get-SafeName $g.name) - $($g.id.Substring(0, 8)).$(Get-Ext $g.photo_path)"
-      $copiar += ,@('wardrobe', $g.photo_path, (Join-Path $Destino "Armario\$quien\$nombre"))
+      $copiar += ,@('wardrobe', $g.photo_path, (Join-Path $Destino "$quien\Armario\$nombre"))
     }
     foreach ($p in $t['photos']) {
       $album = $albumes[$p.album_id]; if (-not $album) { $album = 'Sin album' }
+      $quien = $porUsuario[$p.created_by]; if (-not $quien) { $quien = 'Familia' }
       $titulo = $p.taken_on; if ($p.caption) { $titulo = "$titulo $($p.caption)" }
       $nombre = "$(Get-SafeName $titulo) - $($p.id.Substring(0, 8)).$(Get-Ext $p.path)"
-      $copiar += ,@('family-photos', $p.path, (Join-Path $Destino "Fotos\$album\$nombre"))
+      $copiar += ,@('family-photos', $p.path, (Join-Path $Destino "$quien\Fotos personales\$album\$nombre"))
     }
 
     foreach ($c in $copiar) {
