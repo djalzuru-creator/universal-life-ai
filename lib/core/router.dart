@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/auth/login_page.dart';
 import '../features/household/data/providers.dart';
+import '../features/agenda/agenda.dart';
 import '../features/budget/budget.dart';
 import '../features/household/ui/admin_page.dart';
 import '../features/household/ui/dashboard_page.dart';
@@ -68,6 +69,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'wardrobe',
             builder: (_, s) =>
                 WardrobePage(householdId: s.pathParameters['hid']!),
+          ),
+          GoRoute(
+            path: 'agenda',
+            builder: (_, s) =>
+                AgendaPage(householdId: s.pathParameters['hid']!),
           ),
           GoRoute(
             path: 'budget',

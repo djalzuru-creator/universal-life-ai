@@ -20,7 +20,8 @@ enum AppModule {
   shopping('Lista de la compra'),
   budget('Presupuesto'),
   recipes('Recetas'),
-  wardrobe('Armario');
+  wardrobe('Armario'),
+  agenda('Agenda');
 
   const AppModule(this.label);
   final String label;

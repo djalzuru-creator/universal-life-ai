@@ -19,6 +19,7 @@ const availableModules = {
   AppModule.wardrobe,
   AppModule.budget,
   AppModule.recipes,
+  AppModule.agenda,
 };
 
 const moduleIcons = {
@@ -28,6 +29,7 @@ const moduleIcons = {
   AppModule.budget: Icons.account_balance_wallet_outlined,
   AppModule.recipes: Icons.restaurant_menu_outlined,
   AppModule.wardrobe: Icons.checkroom,
+  AppModule.agenda: Icons.event_outlined,
 };
 
 const moduleBlurb = {
@@ -36,6 +38,7 @@ const moduleBlurb = {
   AppModule.wardrobe: 'Looks según el tiempo',
   AppModule.budget: 'Gastos del mes',
   AppModule.recipes: 'Qué cocinar hoy',
+  AppModule.agenda: 'Citas y planes',
 };
 
 const _days = [
@@ -368,6 +371,7 @@ class _Assistant extends StatelessWidget {
     (AppModule.pantry, '🥫 ¿Qué caduca pronto?'),
     (AppModule.budget, '💶 ¿Cómo van las cuentas?'),
     (AppModule.wardrobe, '👗 ¿Qué me pongo hoy?'),
+    (AppModule.agenda, '📅 ¿Qué tenemos hoy?'),
   ];
 
   @override

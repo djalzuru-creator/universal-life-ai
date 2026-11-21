@@ -43,7 +43,8 @@ select public.accept_invitation(lower(:'code'));
 select pg_temp.check((select count(*) from members) = 2, 'adolescente ve a su familia');
 select pg_temp.check((select count(distinct member_id) from member_permissions) = 1, 'adolescente solo ve sus permisos');
 select pg_temp.check(not public.has_permission(:'hid', 'budget', 'edit'), 'adolescente no edita presupuesto');
-select pg_temp.check(public.has_permission(:'hid', 'shopping', 'create'), 'adolescente añade a la compra');
+select pg_temp.check(not public.has_permission(:'hid', 'shopping', 'view'), 'adolescente no ve la compra');
+select pg_temp.check(public.has_permission(:'hid', 'wardrobe', 'create'), 'adolescente usa el armario');
 select pg_temp.check((select count(*) from invitations) = 0, 'adolescente no ve invitaciones');
 select pg_temp.check((select count(*) from audit_log) = 0, 'adolescente no ve auditoría');
 
@@ -61,6 +62,12 @@ exception when others then
   if sqlerrm like 'FALLO%' then raise; end if;
   raise notice 'ok: código de un solo uso';
 end $$;
+
+-- 6b. Adolescentes: solo panel, armario y agenda
+select pg_temp.check((select bool_and(can_view = (module in ('dashboard','wardrobe','agenda'))) from member_permissions
+  where member_id = (select id from members where role = 'teen')), 'adolescente solo ve armario');
+select pg_temp.check((select bool_and(can_create) from member_permissions
+  where module = 'wardrobe' and member_id = (select id from members where role = 'teen')), 'adolescente usa su armario');
 
 -- 7. El propietario cambia permisos, suspende y queda registrado
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
