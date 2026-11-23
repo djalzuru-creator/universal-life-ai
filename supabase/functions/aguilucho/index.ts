@@ -3,7 +3,8 @@
 // Los datos se leen con la sesión de quien llama, así que las reglas de permisos
 // (RLS) siguen mandando: nadie ve ropa ni despensa que no le toca.
 
-const MODEL = 'gemini-flash-latest';
+// Si un modelo está saturado, retirado o sin cuota, se prueba el siguiente.
+const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,22 +38,42 @@ async function rest(req: Request, path: string) {
 async function gemini(prompt: string) {
   const key = Deno.env.get('GEMINI_API_KEY');
   if (!key) throw new Error('sin_clave');
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.8 },
-      }),
-    },
-  );
-  if (r.status === 429) throw new Error('limite');
-  if (!r.ok) throw new Error(`gemini ${r.status}`);
-  const data = await r.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
-  return JSON.parse(text);
+  let last = 'fallo';
+  for (const model of MODELS) {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.8 },
+        }),
+      },
+    );
+    if (r.ok) {
+      const data = await r.json();
+      const parts = data?.candidates?.[0]?.content?.parts ?? [];
+      const text = parts.map((p: { text?: string }) => p.text ?? '').join('');
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          return JSON.parse(text.slice(start, end + 1));
+        } catch (_) { /* respuesta rota: probamos otro modelo */ }
+      }
+      last = 'fallo';
+      continue;
+    }
+    const err = (await r.text()).slice(0, 300);
+    console.error(`gemini ${model} ${r.status} ${err}`);
+    // Clave mal copiada, caducada o borrada en Google AI Studio.
+    if (r.status === 401 || r.status === 403 || err.includes('API_KEY')) {
+      throw new Error('clave_mala');
+    }
+    last = r.status === 429 ? 'limite' : 'fallo';
+  }
+  throw new Error(last);
 }
 
 async function outfit(req: Request, body: Record<string, unknown>) {
@@ -148,7 +169,7 @@ Deno.serve(async (req) => {
     return json({ error: 'modo' }, 400);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const code = msg === 'sin_clave' || msg === 'limite' ? msg : 'fallo';
+    const code = ['sin_clave', 'clave_mala', 'limite'].includes(msg) ? msg : 'fallo';
     console.error(msg);
     return json({ error: code }, code === 'limite' ? 429 : 500);
   }
