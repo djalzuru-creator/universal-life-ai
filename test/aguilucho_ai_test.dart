@@ -16,6 +16,7 @@ void main() {
 
   test('los errores de la IA salen en español', () {
     expect(aiErrorMessage('sin_clave'), contains('clave de Gemini'));
+    expect(aiErrorMessage('clave_mala'), contains('no vale'));
     expect(aiErrorMessage('otra cosa'), contains('Prueba otra vez'));
   });
 }

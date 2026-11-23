@@ -49,6 +49,7 @@ class AiException implements Exception {
 String aiErrorMessage(String? code) => switch (code) {
   'sin_clave' =>
     'Falta guardar la clave de Gemini en Supabase. Pídeselo al administrador.',
+  'clave_mala' => 'La clave de Gemini no vale. Hace falta una nueva.',
   'limite' => 'Aguilucho ha pensado mucho hoy. Prueba otra vez en un rato.',
   'sin_ropa' => 'Añade primero alguna prenda al armario.',
   'sin_despensa' => 'Añade primero algo a la despensa.',
@@ -72,7 +73,7 @@ class AguiluchoAi {
       throw const AiException('Respuesta inesperada de Aguilucho.');
     } on FunctionException catch (e) {
       final d = e.details;
-      if (e.status == 404) {
+      if (e.status == 404 || '$d'.contains('NOT_FOUND')) {
         throw const AiException(
           'La IA aún no está instalada en Supabase. Pídeselo al administrador.',
         );
@@ -80,6 +81,11 @@ class AguiluchoAi {
       throw AiException(
         aiErrorMessage(d is Map ? d['error'] as String? : null),
       );
+    } on AiException {
+      rethrow;
+    } catch (_) {
+      // Sin conexión, o la función no existe y el navegador corta la llamada.
+      throw const AiException('Sin conexión con Aguilucho. Revisa internet.');
     }
   }
 
