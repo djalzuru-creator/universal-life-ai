@@ -63,8 +63,8 @@ exception when others then
   raise notice 'ok: código de un solo uso';
 end $$;
 
--- 6b. Adolescentes: solo panel, armario y agenda
-select pg_temp.check((select bool_and(can_view = (module in ('dashboard','wardrobe','agenda'))) from member_permissions
+-- 6b. Adolescentes: solo panel, armario, agenda y fotos
+select pg_temp.check((select bool_and(can_view = (module in ('dashboard','wardrobe','agenda','photos'))) from member_permissions
   where member_id = (select id from members where role = 'teen')), 'adolescente solo ve armario');
 select pg_temp.check((select bool_and(can_create) from member_permissions
   where module = 'wardrobe' and member_id = (select id from members where role = 'teen')), 'adolescente usa su armario');

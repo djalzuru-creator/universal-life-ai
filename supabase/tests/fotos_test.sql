@@ -47,12 +47,19 @@ select pg_temp.check((select count(*) from photos) = 2, 'padre sube');
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
 select public.accept_invitation(:'c_teen');
-select pg_temp.check((select count(*) from photos) = 0 and (select count(*) from albums) = 0, 'adolescente no ve fotos');
-select pg_temp.check((select count(*) from storage.objects) = 0, 'adolescente no ve archivos');
-do $$ begin
-  insert into storage.objects (bucket_id, name) values ('family-photos', current_setting('test.hid') || '/c.jpg');
-  raise exception 'FALLO: adolescente subió';
-exception when others then if sqlerrm like 'FALLO%' then raise; end if; raise notice 'ok: adolescente no sube'; end $$;
+select pg_temp.check((select count(*) from photos) = 2 and (select count(*) from storage.objects) = 2, 'adolescente ve el álbum');
+insert into storage.objects (bucket_id, name) values ('family-photos', :'hid' || '/c.jpg');
+insert into photos (household_id, path, caption) values (:'hid', :'hid' || '/c.jpg', 'Mía');
+select pg_temp.check((select count(*) from photos) = 3, 'adolescente sube');
+update photos set caption = 'Mía 2' where caption = 'Mía';
+select pg_temp.check(exists (select 1 from photos where caption = 'Mía 2'), 'adolescente cambia la suya');
+delete from photos where caption = 'Playa';
+select pg_temp.check((select count(*) from photos) = 3, 'adolescente no borra la del padre');
+delete from storage.objects where name = :'hid' || '/b.jpg';
+select pg_temp.check((select count(*) from storage.objects) = 3, 'adolescente no borra archivo del padre');
+delete from photos where caption = 'Mía 2';
+delete from storage.objects where name = :'hid' || '/c.jpg';
+select pg_temp.check((select count(*) from photos) = 2 and (select count(*) from storage.objects) = 2, 'adolescente borra la suya');
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000f4');
 select public.create_household('Casa X', 'X');
